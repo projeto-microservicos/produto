@@ -1,0 +1,18 @@
+site_name: Projeto de microsserviços
+site_description: Contratos, operação e documentação da equipe
+repo_url: https://github.com/projeto-microservicos/produto
+site_url: !ENV [SITE_URL, '']
+theme:
+  name: mkdocs
+  locale: pt_BR
+nav:
+  - Início: index.md
+  - Arquitetura e contratos: architecture.md
+  - Desenvolvimento: development.md
+  - Deploy e capacidade: deployment.md
+  - Custos e responsabilidades: costs.md
+markdown_extensions:
+  - tables
+  - fenced_code
+  - admonition
+strict: true

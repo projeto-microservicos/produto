@@ -1,0 +1,8 @@
+{
+  "account": "https://github.com/projeto-microservicos/account-service.git",
+  "auth": "https://github.com/projeto-microservicos/auth-service.git",
+  "gateway": "https://github.com/projeto-microservicos/gateway-service.git",
+  "product": "https://github.com/projeto-microservicos/product-service.git",
+  "exchange": "https://github.com/projeto-microservicos/exchange-service.git",
+  "order": "https://github.com/projeto-microservicos/order-service.git"
+}

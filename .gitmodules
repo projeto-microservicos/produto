@@ -1,0 +1,18 @@
+[submodule "account"]
+	path = services/account
+	url = https://github.com/projeto-microservicos/account-service.git
+[submodule "auth"]
+	path = services/auth
+	url = https://github.com/projeto-microservicos/auth-service.git
+[submodule "gateway"]
+	path = services/gateway
+	url = https://github.com/projeto-microservicos/gateway-service.git
+[submodule "order"]
+	path = services/order
+	url = https://github.com/projeto-microservicos/order-service.git
+[submodule "product"]
+	path = services/product
+	url = https://github.com/projeto-microservicos/product-service.git
+[submodule "exchange"]
+	path = services/exchange
+	url = https://github.com/projeto-microservicos/exchange-service.git
