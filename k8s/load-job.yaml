@@ -1,0 +1,42 @@
+# Run inside the namespace so traffic crosses the Service and reaches all gateway replicas.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: store-load
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {app: store-load}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 12345
+        fsGroup: 12345
+      containers:
+        - name: k6
+          image: grafana/k6:1.6.1
+          args: [run, /scripts/store.js]
+          env:
+            - {name: BASE_URL, value: 'http://gateway:8080'}
+            - {name: LOAD_PROFILE, value: ramp}
+            - {name: MAX_VUS, value: '30'}
+            - {name: SUMMARY_STDOUT, value: 'true'}
+          resources:
+            requests: {cpu: 100m, memory: 64Mi}
+            limits: {cpu: '1', memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: scripts, mountPath: /scripts, readOnly: true}
+            - {name: results, mountPath: /results}
+      volumes:
+        - name: scripts
+          configMap: {name: store-load-script}
+        - name: results
+          emptyDir: {}

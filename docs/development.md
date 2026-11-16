@@ -1,5 +1,39 @@
 # Desenvolvimento
 
+## Ambiente integrado
+
+Use Docker Desktop com containers Linux e Python 3.12+. O build usa JDK 25 e Maven dentro do Docker; não depende do Java padrão do Windows.
+
+```bash
+python scripts/project.py init
+python scripts/project.py doctor
+python scripts/project.py up --monitoring
+python scripts/project.py smoke
+```
+
+A inicialização gera senhas e uma chave JWT em `.env`, sem sobrescrever um arquivo existente. Guarde esse arquivo: trocar uma senha no `.env` não altera a senha de um PostgreSQL que já tem volume inicializado. O `down` preserva os volumes. Não use `down -v` se quiser manter os dados.
+
+O teste de ponta a ponta usa `http://127.0.0.1:8080`, registra duas contas sintéticas, autentica, verifica token inválido e falsificação de `id-account`, cria um produto e um pedido de USD 20,24, verifica isolamento entre contas e remove o produto de teste. As contas e o pedido permanecem no banco. Para também validar uma conversão BRL com o provedor real:
+
+```bash
+python scripts/smoke.py --live-exchange
+```
+
+Redis, RabbitMQ, JWT próprio de order e pagamentos ficam desligados no ambiente integrado, como no Deployment atual. O gateway autentica as chamadas. O USD/USD do exchange permite carga sem enviar tráfego ao provedor externo.
+
+## Testes automatizados
+
+```bash
+python -m venv .venv
+# PowerShell
+.venv/Scripts/python.exe -m pip install -r requirements.txt -r services/exchange/requirements-dev.txt
+.venv/Scripts/python.exe scripts/project.py test
+```
+
+`test` executa os cinco projetos Java em containers Maven e os testes Python/Bash em Linux. As dependências Python são instaladas no container de testes. Esse caminho também funciona no Windows e preserva os testes Bash dos pipelines. Os testes de integração opcionais de Redis/RabbitMQ continuam condicionados aos scripts próprios desses serviços.
+
+Para observar a execução: `python scripts/project.py status`, `python scripts/project.py logs`, Prometheus em <http://127.0.0.1:9090> e Grafana em <http://127.0.0.1:3000>. A senha do usuário Grafana `admin` está em `GRAFANA_PASSWORD` no `.env`.
+
 ## Clonar e atualizar o agregador
 
 ```bash
@@ -42,3 +76,5 @@ python -m mkdocs serve
 ```
 
 Os PRs do agregador validam a documentação. Os testes de cada serviço continuam no CI/CD do respectivo repositório.
+
+O workflow `integration.yml` também constrói os seis serviços fixados nos submodules, verifica o fluxo pelo gateway e roda o perfil curto k6. Ele só funcionará com esta implementação depois de publicar os commits alterados nos repositórios dos serviços e atualizar os gitlinks. Não faz deploy AWS.

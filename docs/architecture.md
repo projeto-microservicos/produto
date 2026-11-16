@@ -9,7 +9,7 @@ O cliente acessa o gateway. O gateway valida o token e define `id-account` com o
 | order | `GET /products/{id}` | `http://product:8080`; repassa `id-account` |
 | order | `GET /exchanges/USD/{currency}` | `http://exchange:8080`; repassa `id-account` |
 
-As chamadas internas não precisam retornar ao gateway. Os nomes DNS curtos pressupõem Services no mesmo namespace. Rotas de account, auth e order devem ser documentadas conforme a implementação do gateway; não são inferidas dos contratos acima.
+As chamadas internas não precisam retornar ao gateway. Os nomes DNS curtos pressupõem Services no mesmo namespace. O gateway encaminha `/auth/**`, `/products/**`, `/orders/**` e `/exchanges/**`. Cadastro, login e logout são abertos. `/auth/solve` e todo `/accounts/**` ficam bloqueados externamente com 404; a conta autenticada é consultada por `/auth/me`. Assim, um cliente não pode listar ou excluir contas de outros usuários.
 
 ## Produto e câmbio consumidos por order
 
@@ -20,6 +20,8 @@ Produto retorna um objeto JSON com `id` e `price`, sendo o preço monetário em 
 ```
 
 Câmbio retorna JSON com `sell` positivo. O campo `buy` também pode ser retornado; order usa a cotação de venda para converter USD na moeda solicitada.
+
+O exchange consulta diretamente o BACEN/PTAX e retorna o último fechamento disponível, preservando a data. Para moedas diferentes de BRL, o cruzamento usa compra/venda em BRL da mesma data. A cobertura é AUD, BRL, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK e USD; outras moedas retornam 422 no provedor. Order e gateway mantêm o mesmo contrato HTTP.
 
 ```json
 {"sell":6.00,"buy":5.90}

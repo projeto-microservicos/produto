@@ -1,0 +1,14 @@
+scenario,service,region,quantity,usage_per_month,unit,unit_price_usd,monthly_usd,status
+existing,EKS standard support,us-east-2,1,730,hour,0.10,73.00,observed
+existing,EC2 Linux t2.small,us-east-2,2,730,hour,0.023,33.58,observed
+existing,EBS gp3 worker root disks,us-east-2,2,20,GB-month,0.08,3.20,observed
+existing,NAT Gateway fixed charge,us-east-2,2,730,hour,0.045,65.70,observed
+existing,Public IPv4 minimum,us-east-2,3,730,address-hour,0.005,10.95,observed
+proposed-additional,RDS PostgreSQL db.t4g.micro Single-AZ,us-east-2,1,730,hour,0.016,11.68,not-created
+proposed-additional,RDS gp3 storage,us-east-2,1,20,GB-month,0.115,2.30,not-created
+proposed-additional,EC2 third t2.small,us-east-2,1,730,hour,0.023,16.79,not-created
+proposed-additional,EBS gp3 third node disk,us-east-2,1,20,GB-month,0.08,1.60,not-created
+variable,NAT data processing,us-east-2,2,,GB,0.045,,measure-usage
+variable,ECR storage,us-east-2,1,,GB-month,,,measure-usage
+variable,CloudWatch logs and metrics,us-east-2,1,,usage,,,measure-usage
+variable,Secrets Manager RDS master secret,us-east-2,1,,secret-month,,,not-created

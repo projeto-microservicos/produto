@@ -1,0 +1,6 @@
+[
+  {"ParameterKey": "VpcId", "ParameterValue": "vpc-06781734dfd65d979"},
+  {"ParameterKey": "PrivateSubnetIds", "ParameterValue": "subnet-05d2e71feadfa5a5e,subnet-0fff41d73e37ff55d"},
+  {"ParameterKey": "NodeSecurityGroupId", "ParameterValue": "sg-02e72e35c64116aec"},
+  {"ParameterKey": "DatabaseClass", "ParameterValue": "db.t4g.micro"}
+]

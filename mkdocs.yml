@@ -9,6 +9,8 @@ nav:
   - Início: index.md
   - Arquitetura e contratos: architecture.md
   - Desenvolvimento: development.md
+  - Testes de carga e HPA: load-testing.md
+  - Resultados da validação: validation.md
   - Deploy e capacidade: deployment.md
   - Custos e responsabilidades: costs.md
 markdown_extensions:

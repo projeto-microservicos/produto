@@ -2,6 +2,29 @@
 
 Repositório agregador da equipe: fixa versões dos serviços por submodules e publica a documentação com MkDocs no GitHub Pages. O catálogo contempla seis serviços; todos têm repositórios confirmados. Cada serviço mantém seu próprio build, Dockerfile, manifesto Kubernetes e CI/CD com ECR + OIDC.
 
+## Executar o projeto completo
+
+Requisitos: Docker Desktop com containers Linux e Python 3.12+. Na raiz:
+
+```bash
+python scripts/project.py init
+python scripts/project.py doctor
+python scripts/project.py up --monitoring
+python scripts/project.py smoke
+python scripts/project.py load --profile smoke
+python scripts/project.py load --profile ramp
+```
+
+Gateway: <http://127.0.0.1:8080>. Prometheus: <http://127.0.0.1:9090>. Grafana: <http://127.0.0.1:3000>, usuário `admin` e senha gerada em `.env`. O dashboard **Store — tráfego, erros e latência** é provisionado automaticamente. Apenas o gateway e as interfaces locais de observabilidade publicam portas no host; os bancos ficam na rede Docker.
+
+O Compose da raiz evita a colisão de porta entre account e exchange dos Composes individuais. Os fluxos de conta, JWT, produtos e autenticação do gateway estão implementados nesta revisão local. As alterações em `services/` pertencem aos respectivos submodules e precisam ser publicadas nesses repositórios antes de atualizar os gitlinks do agregador.
+
+Para parar preservando os bancos: `python scripts/project.py down`. Instruções completas: [desenvolvimento](docs/development.md), [carga e HPA](docs/load-testing.md), [PaaS e custos](docs/costs.md) e [preparação AWS](docs/deployment.md).
+
+Os [resultados da validação](docs/validation.md) registram testes, carga medida e as pendências da entrega.
+
+Decisão de 16/11/2026: manter AWS preparada, sem criar recursos ou ampliar nós; acesso futuro via port-forward. O EKS existente não foi alterado por essa preparação.
+
 ## Preparação inicial
 
 Este é o repositório principal [projeto-microservicos/produto](https://github.com/projeto-microservicos/produto). O catálogo `repositories.json` registra as URLs confirmadas de account, auth, gateway, product, exchange e order. O catálogo dos seis serviços está completo.
@@ -41,4 +64,4 @@ Validação: `python -m mkdocs build --strict`. A documentação não depende de
 
 Em **Settings → Pages → Build and deployment**, selecione **GitHub Actions**. Configure a variável Actions `PAGES_ENABLED=true`. O workflow `docs.yml` valida PRs e publica a documentação nos pushes de `main`, ou por execução manual em `main`. O endereço publicado aparece no job de deploy. Ele usa o domínio padrão `github.io`, sem contratação de domínio ou recurso AWS.
 
-Consulte [custos e responsabilidades](docs/costs.md) antes de ativar recursos pagos. O código preparado não cria infraestrutura, publica serviços ou configura faturamento.
+Consulte [custos e responsabilidades](docs/costs.md) antes de ativar recursos pagos. O pipeline da documentação publica o site estático; a implantação dos serviços segue o roteiro separado de AWS.

@@ -1,0 +1,9 @@
+{
+  "region": "us-east-2",
+  "account_id": "533267095490",
+  "cluster": "eks-store",
+  "namespace": "store",
+  "database_host": "REPLACE_WITH_RDS_ENDPOINT",
+  "database_name": "store",
+  "cors_origin": "http://127.0.0.1:18080"
+}

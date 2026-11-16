@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+scrape_configs:
+  - job_name: spring
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [gateway:9091, auth:9091, account:9091, product:9091, order:9091]
+  - job_name: exchange
+    metrics_path: /metrics
+    static_configs:
+      - targets: [exchange:8080]
