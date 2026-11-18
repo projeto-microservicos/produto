@@ -1,0 +1,39 @@
+# HPA do gateway para o teste de carga (LT-02). Vem da PR #1 de adventurescumm (16/11/2026).
+#
+# Aplicar só na hora do teste e apagar no fim, como pede o enunciado:
+#   kubectl -n store apply -f k8s/hpa.yaml
+#   kubectl -n store delete hpa gateway
+#
+# Por que no máximo 3 réplicas: cada uma reserva 100m de CPU e 320 MiB, e os nós t2.small (940m e ~1,45 GiB
+# alocáveis) estão quase cheios. Antes de gravar, confira se algum nó tem folga para mais duas
+# (docs/load-testing.md, "Antes de começar"). Os nós são recriados toda manhã, então a folga muda de um dia para o outro.
+#
+# O alvo de 50% é sobre o request de 100m: 50m de CPU real já dispara a escala.
+# Calibrado em 18/11/2026: ~1.000 RPS no /gateway/health-check levam um pod a ~112m, e o HPA pede 3.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 120

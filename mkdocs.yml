@@ -8,8 +8,10 @@ theme:
 nav:
   - Início: index.md
   - Arquitetura e contratos: architecture.md
+  - Mensageria (EDA): mensageria.md
   - Desenvolvimento: development.md
   - Deploy e capacidade: deployment.md
+  - Teste de carga e HPA: load-testing.md
   - Custos, PaaS e SLA: costs.md
 markdown_extensions:
   - tables

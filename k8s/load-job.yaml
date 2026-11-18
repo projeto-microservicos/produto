@@ -1,0 +1,54 @@
+# Alternativa: gerar a carga de dentro do cluster, pelo Service do gateway, sem passar pela internet.
+# Vem da PR #1 de adventurescumm (16/11/2026) e foi adaptada ao load/store.js atual.
+# O caminho calibrado em 18/11/2026 é o k6 local contra o NLB (docs/load-testing.md); este Job não foi
+# calibrado no EKS. Dentro do cluster a latência é de poucos ms, então menos VUs já geram muita carga.
+# Comece pelo smoke.
+#
+#   kubectl -n store create configmap store-load-script --from-file=store.js=load/store.js
+#   kubectl -n store apply -f k8s/load-job.yaml
+#   kubectl -n store logs -f job/store-load
+#   kubectl -n store delete job store-load; kubectl -n store delete configmap store-load-script
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: store-load
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {app: store-load}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 12345
+        fsGroup: 12345
+      containers:
+        - name: k6
+          # grafana/k6:1.6.1, fixada por digest
+          image: grafana/k6@sha256:a5ad6bc089a08d77c3ec49f3db8c6fa7a148e4073efcac44c675dbaf3568d8e1
+          args: [run, /scripts/store.js]
+          env:
+            - {name: BASE_URL, value: 'http://gateway:8080'}
+            - {name: TARGET, value: gateway}
+            - {name: LOAD_PROFILE, value: ramp}
+            - {name: MAX_VUS, value: '30'}
+            - {name: SLEEP, value: '0.05'}
+            - {name: SUMMARY_FILE, value: /results/k6-summary.json}
+          resources:
+            requests: {cpu: 100m, memory: 64Mi}
+            limits: {cpu: '1', memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: scripts, mountPath: /scripts, readOnly: true}
+            - {name: results, mountPath: /results}
+      volumes:
+        - name: scripts
+          configMap: {name: store-load-script}
+        - name: results
+          emptyDir: {}
