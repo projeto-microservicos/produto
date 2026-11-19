@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420" font-family="Helvetica, Arial, sans-serif" font-size="13" role="img" aria-labelledby="t d">
+  <title id="t">Fluxo da mensageria (EDA) do pedido</title>
+  <desc id="d">O POST /orders grava o pedido e o evento na mesma transação e responde 201. Depois, o relay da outbox publica o evento no RabbitMQ, e o OrderConfirmationWorker grava a confirmação. Mensagens inválidas vão para a DLQ.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+  <rect width="960" height="420" fill="#ffffff"/>
+
+  <!-- faixa síncrona -->
+  <text x="20" y="24" font-weight="bold" fill="#2b6cb0">Dentro da requisição (síncrono)</text>
+  <g stroke="#2b6cb0" stroke-width="1.5" fill="#ebf4ff">
+    <rect x="20" y="40" width="120" height="64" rx="8"/>
+    <rect x="190" y="40" width="140" height="64" rx="8"/>
+    <rect x="380" y="40" width="200" height="64" rx="8"/>
+    <rect x="670" y="40" width="270" height="64" rx="8"/>
+  </g>
+  <g fill="#1a202c" text-anchor="middle">
+    <text x="80" y="77" font-weight="bold">Cliente</text>
+    <text x="260" y="68" font-weight="bold">Gateway</text>
+    <text x="260" y="88">valida o JWT</text>
+    <text x="480" y="68" font-weight="bold">order-service</text>
+    <text x="480" y="88">POST /orders</text>
+    <text x="805" y="62" font-weight="bold">PostgreSQL (RDS)</text>
+    <text x="805" y="80">pedido + evento na mesma transação</text>
+    <text x="805" y="97" font-size="12">orders.orders · orders.order_outbox</text>
+  </g>
+  <g stroke="#4a5568" stroke-width="1.5" fill="none" marker-end="url(#a)">
+    <line x1="140" y1="72" x2="186" y2="72"/>
+    <line x1="330" y1="72" x2="376" y2="72"/>
+    <line x1="580" y1="72" x2="666" y2="72"/>
+    <path d="M480,104 L480,130 L80,130 L80,108" stroke-dasharray="5 4"/>
+  </g>
+  <text x="280" y="148" text-anchor="middle" fill="#2b6cb0">201 Created, sem esperar o consumidor nem o broker</text>
+
+  <!-- faixa assíncrona -->
+  <text x="20" y="190" font-weight="bold" fill="#2f855a">Fora da requisição (assíncrono)</text>
+  <g stroke="#2f855a" stroke-width="1.5" fill="#f0fff4">
+    <rect x="670" y="206" width="270" height="70" rx="8"/>
+    <rect x="350" y="206" width="240" height="70" rx="8"/>
+    <rect x="20" y="206" width="250" height="70" rx="8"/>
+    <rect x="20" y="340" width="250" height="62" rx="8"/>
+  </g>
+  <g stroke="#c53030" stroke-width="1.5" fill="#fff5f5">
+    <rect x="350" y="340" width="240" height="62" rx="8"/>
+  </g>
+  <g fill="#1a202c" text-anchor="middle">
+    <text x="805" y="230" font-weight="bold">Relay da outbox (a cada 1 s)</text>
+    <text x="805" y="249">publisher confirms</text>
+    <text x="805" y="266" font-size="12">falhou? tenta de novo: 2 s, 4 s… até 256 s</text>
+    <text x="470" y="230" font-weight="bold">RabbitMQ</text>
+    <text x="470" y="249">exchange store.orders</text>
+    <text x="470" y="266" font-size="12">created → fila orders.created</text>
+    <text x="145" y="230" font-weight="bold">OrderConfirmationWorker</text>
+    <text x="145" y="249">idempotente por eventId</text>
+    <text x="145" y="266" font-size="12">ack só depois do commit</text>
+    <text x="145" y="366" font-weight="bold">orders.order_notifications</text>
+    <text x="145" y="386">confirmação gravada + log</text>
+    <text x="470" y="366" font-weight="bold" fill="#c53030">DLQ orders.created.dlq</text>
+    <text x="470" y="386">inválidas ou 3 falhas de banco</text>
+  </g>
+  <g stroke="#4a5568" stroke-width="1.5" fill="none" marker-end="url(#a)">
+    <line x1="805" y1="104" x2="805" y2="202"/>
+    <line x1="670" y1="241" x2="594" y2="241"/>
+    <line x1="350" y1="241" x2="274" y2="241"/>
+    <line x1="145" y1="276" x2="145" y2="336"/>
+    <path d="M270,262 C310,262 300,352 346,362" stroke="#c53030"/>
+  </g>
+  <g fill="#4a5568" font-size="12">
+    <text x="815" y="160">lê os eventos pendentes</text>
+    <text x="630" y="232" text-anchor="middle" font-size="11">OrderCreated</text>
+    <text x="310" y="232" text-anchor="middle">entrega</text>
+    <text x="155" y="312">grava</text>
+    <text x="312" y="302" fill="#c53030">rejeita</text>
+  </g>
+</svg>

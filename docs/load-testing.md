@@ -1,76 +1,93 @@
-# Testes de carga e HPA
+# Teste de carga e HPA
 
-O [exercício de carga](https://insper.github.io/platform/pt/2026.2/exercises/project/load-testing/) pede um vídeo com o gerador de carga e o HPA em execução. A aplicação usa `/products`, `/orders` e `/exchanges`; não oferece o `/info` usado como exemplo no enunciado.
+O enunciado pede um teste de carga na aplicação Spring Boot e um vídeo que mostre **a carga rodando** e **o HPA escalando**. Usamos o [k6](https://grafana.com/docs/k6/latest/) contra o gateway, que é Spring Cloud Gateway, e um HPA no Deployment do gateway, no EKS.
 
-Os [resultados já medidos](validation.md) registram a validação desta revisão.
+## O que roda
 
-## Validar a carga com Compose
+| Peça | Arquivo | Resumo |
+|---|---|---|
+| Script de carga | `load/store.js` | k6 1.6.1 (imagem `grafana/k6`, fixada por digest) |
+| Alvo principal | `TARGET=gateway` | `GET /gateway/health-check`, que o próprio gateway responde sem token e sem chamar outro serviço. Equivale ao `/info` do enunciado, que o nosso gateway só expõe na porta interna. Isola a CPU do gateway, que é o que o HPA mede |
+| Cenário completo (opcional) | `TARGET=store` | Cria conta, produto e pedido. Depois faz leituras autenticadas de produto, pedido e câmbio USD→USD, cada uma passando por gateway → auth → serviço. Moeda igual não chama a PTAX |
+| Autoscaler | `k8s/hpa.yaml` | gateway com alvo de 50% do request de CPU (100m), de 1 a 3 réplicas, sobe 1 pod a cada 30 s e espera 120 s antes de reduzir |
+| Alternativa dentro do cluster | `k8s/load-job.yaml` | o mesmo script num Job, pelo Service do gateway (não calibrado no EKS) |
 
-```bash
-python scripts/project.py up --monitoring
-python scripts/project.py smoke
-python scripts/project.py load --profile smoke
-python scripts/project.py load --profile ramp
-```
+**Por que no máximo 3 réplicas.** Os nós são t2.small, com 940m de CPU, ~1,45 GiB e 11 pods alocáveis cada. Em 18/11, só um dos 3 nós tinha folga para mais duas réplicas do gateway (100m e 320 MiB reservados cada). Com `--max=10`, como no exemplo do enunciado, sete réplicas ficariam `Pending`. O HPA cria pods; ele não cria nós.
 
-O teste curto usa um usuário por 15 segundos. A rampa sobe de 1 para 5 usuários em 1 minuto, chega a 30 em mais 2 minutos, sustenta 30 por 3 minutos e reduz a zero em 1 minuto. O `setup` cria uma conta, um produto e um pedido. Durante a carga são feitas três leituras autenticadas por iteração; o produto é excluído no fim. Contas e pedidos sintéticos permanecem no banco. Não há criação contínua de pedidos nem chamadas ao provedor público de câmbio.
+## Calibração (18/11/2026)
 
-O arquivo `artifacts/k6-summary.json` registra contagem de requisições, vazão, percentis, taxa de falhas e resultado dos thresholds. O comando retorna erro quando as falhas superam 1%, p95 atinge 1 segundo ou as verificações ficam abaixo de 99%. Esses limites são metas iniciais do projeto. Guarde o JSON de cada execução com nome próprio antes de repetir.
+Carga de uma máquina fora da AWS, pelo NLB, contra o `/gateway/health-check`, com 1 réplica do gateway e sem HPA:
 
-O dashboard Grafana **Store — tráfego, erros e latência** mostra vazão, 5xx, p95 e CPU por serviço. Compose não tem HPA: essa execução comprova apenas o comportamento sob carga.
+| Carga | Vazão | p95 | Falhas | CPU do gateway | Réplicas que o HPA pediria |
+|---|---|---|---|---|---|
+| 60 VUs, sem pausa, 90 s | 416 req/s | 154 ms | 0% | ~55m (55% do request) | 1 ou 2: está no limiar, e o HPA tolera 10% |
+| 150 VUs, sem pausa, 60 s | 1.039 req/s | 154 ms | 0% | ~112m (112%) | 3, porque `ceil(1 × 112 / 50) = 3`, limitado ao máximo |
 
-## Demonstrar HPA sem gastos AWS
+Os dois testes tiveram o mesmo p95, que é basicamente o caminho de rede até us-east-2: o gateway não saturou. Com 3 réplicas, cada pod fica em ~37m (74% do alvo) e a escala se mantém estável.
 
-Requisitos adicionais: Minikube e kubectl instalados; ambiente virtual com PyYAML. Reserve aproximadamente 4 GiB para o cluster. Em máquinas com Docker limitado a 8 GiB, conclua a carga Compose e pare esse ambiente antes de iniciar o cluster local:
+## Antes de começar
 
-```bash
-python scripts/project.py down
-.venv/Scripts/python.exe scripts/local-k8s.py start
-```
+1. Os nós ficam desligados das 23:59 às 06:00 (horário de Brasília). Grave de dia.
+2. Confira se o metrics-server responde: `kubectl -n store top pods`.
+3. Confira se algum nó tem folga para mais **duas** réplicas do gateway: 200m de CPU, 640 MiB de memória reservada e 2 vagas de pod. Os nós são recriados toda manhã, então isso muda de um dia para o outro.
 
-O script cria o perfil `store-local`, mantém o contexto atual do kubectl e usa explicitamente o contexto local em todas as operações. Carrega as seis imagens já construídas, habilita Metrics Server, inicia PostgreSQL com volume local e aplica o HPA do gateway. Credenciais e manifesto gerados ficam em `.local/`, ignorado pelo Git. Esse PostgreSQL é somente para demonstração e não comprova uso de RDS.
+    ```bash
+    for n in $(kubectl get nodes -o name); do
+      echo "$n · pods: $(kubectl get pods -A --field-selector spec.nodeName=${n#node/} --no-headers | wc -l)/11"
+      kubectl describe "$n" | sed -n '/Allocated resources/,/Events/p' | grep -E '^\s+(cpu|memory)'
+    done
+    ```
 
-Abra três terminais para gravar:
+    Se nenhum nó tiver essa folga, use `maxReplicas: 2` ou peça um 4º nó temporário. O 4º nó custa ~US$ 0,02 por hora e exige o OK do dono da conta.
+4. Não faça merge na `main` do gateway durante a gravação. O deploy reaplica `replicas: 1` e atrapalha o HPA.
 
-```bash
-# Terminal 1: iniciar a carga dentro do cluster
-.venv/Scripts/python.exe scripts/local-k8s.py load
-kubectl --context store-local -n store-demo logs -f job/store-load
-```
-
-```bash
-# Terminal 2: observar réplicas e uso de CPU usado pelo HPA
-kubectl --context store-local -n store-demo get hpa -w
-```
-
-```bash
-# Terminal 3: observar pods que entram e saem
-kubectl --context store-local -n store-demo get pods -w
-```
-
-O HPA usa CPU alvo de 50% do request do gateway, varia de 1 a 3 réplicas e aguarda 120 segundos antes de reduzir. Mostre o estado inicial, a subida da carga, novas réplicas prontas e a redução após o fim. `kubectl --context store-local -n store-demo top pods` ajuda a diagnosticar. O HPA altera pods; ele não adiciona nós. Uma réplica `Pending` não comprova capacidade disponível.
-
-Aguarde a primeira leitura válida de CPU antes de gravar; `<unknown>` durante o início do Metrics Server é temporário. Para salvar a sequência automaticamente em paralelo à carga, use `python scripts/observe-hpa.py`. O arquivo JSONL contém horário UTC, réplicas atuais/desejadas/prontas, CPU e situação do Job. O observador termina quando o Job acaba e o gateway volta a uma réplica pronta, ou após 11 minutos.
-
-A carga roda em um Job de no máximo 10 minutos e usa `http://gateway:8080` pelo Service, distribuindo requisições entre as réplicas. Port-forward aponta para um pod e deve ser reservado ao teste funcional. O resumo JSON também aparece no log do Job como `SUMMARY_JSON=...`; não contém tokens. Para repetir, remova apenas o Job terminado:
+## Como gravar (três terminais)
 
 ```bash
-kubectl --context store-local -n store-demo delete job store-load
-.venv/Scripts/python.exe scripts/local-k8s.py load
+# Terminal 1: cria o HPA e acompanha a CPU e as réplicas
+kubectl -n store apply -f k8s/hpa.yaml
+kubectl -n store get hpa gateway -w
 ```
 
-Para acesso funcional local ao cluster: `kubectl --context store-local -n store-demo port-forward svc/gateway 18080:8080` e, em outro terminal, `python scripts/smoke.py --base-url http://127.0.0.1:18080`.
+```bash
+# Terminal 2: acompanha os pods do gateway e os nós onde eles caem
+kubectl -n store get pods -l app=gateway -o wide -w
+```
 
-Ao terminar: `.venv/Scripts/python.exe scripts/local-k8s.py stop`. Isso para o cluster local e preserva o volume. Depois, `python scripts/project.py up --monitoring` restaura o ambiente Compose.
+```bash
+# Terminal 3: a carga (rampa de 7 min, até 150 VUs)
+docker run --rm -v "$PWD/load:/load:ro" \
+  -e BASE_URL=http://<DNS do NLB> -e TARGET=gateway -e LOAD_PROFILE=ramp -e MAX_VUS=150 -e SLEEP=0 \
+  grafana/k6:1.6.1@sha256:a5ad6bc089a08d77c3ec49f3db8c6fa7a148e4073efcac44c675dbaf3568d8e1 run /load/store.js
+```
 
-## Repetir no EKS quando a implantação for liberada
+O que deve aparecer:
 
-O cluster `eks-store` já tem Metrics Server, mas a implantação completa depende de banco e capacidade. O usuário escolheu não criar recursos pagos nesta etapa. Após resolver essas dependências, execute os mesmos manifestos `k8s/hpa.yaml` e `k8s/load-job.yaml` no namespace `store`, criando antes o ConfigMap `store-load-script` a partir de `load/store.js`.
+| Tempo | Carga | HPA |
+|---|---|---|
+| 0 a 1 min | 1 → 5 VUs | 1 réplica. A coluna `TARGETS` mostra `<unknown>` até a primeira leitura de CPU |
+| 1 a 3 min | → 150 VUs | a CPU passa de 50%, e o HPA sobe 1 → 2 → 3, uma réplica a cada 30 s |
+| 3 a 6 min | 150 VUs (~1.000 req/s) | 3 réplicas, cada uma com ~37% |
+| 6 a 7 min | → 0 | a CPU cai |
+| +2 min | — | depois de 120 s estável, volta a 1 réplica |
 
-Use sempre `--context arn:aws:eks:us-east-2:533267095490:cluster/eks-store -n store`. Confirme `kubectl top pods`, a existência de requests de CPU e espaço para duas réplicas extras de gateway e o Job. Não aplique o HPA de order, que começa em duas réplicas, no cluster atual sem redimensionamento.
+No fim, apague o HPA, como pede o enunciado: `kubectl -n store delete hpa gateway`.
 
-## Evidências da entrega
+## Outros cenários
 
-Guarde o vídeo, data, versão dos serviços, máquina/nós utilizados, perfil de carga, resumo k6, sequência de réplicas do HPA e observações sobre erros/latência. Resultados locais não medem a capacidade do EKS. O vídeo deve mostrar pods prontos atendendo durante a carga, e não apenas a criação do objeto HPA.
+- **Aplicação inteira:** `-e TARGET=store -e MAX_VUS=30 -e SLEEP=0.1`. Cada leitura também chama o `/auth/solve`, então o auth e o nó onde estão as JVMs de auth, product e order passam a dividir a carga. O que aparecer aqui primeiro vale como achado de gargalo.
+- **Dentro do cluster:** o `k8s/load-job.yaml` roda o mesmo script pelo Service do gateway, sem a internet no caminho. Como a latência interna é de poucos ms, comece pelo smoke (`LOAD_PROFILE=smoke`) e ajuste `MAX_VUS` e `SLEEP` antes da rampa.
 
-Referências: [Kubernetes HPA](https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/), [ciclo de vida do k6](https://grafana.com/docs/k6/latest/using-k6/test-lifecycle/), [Minikube start](https://minikube.sigs.k8s.io/docs/commands/start/).
+## Cuidados
+
+- **Nunca contra a PTAX:** o `TARGET=gateway` não chama outros serviços, e o `TARGET=store` só pede USD→USD.
+- **Créditos de CPU do t2:** sob carga contínua, um t2.small cai para 20% de um vCPU quando os créditos acabam. Testes de até 10 min cabem com folga num nó ligado de manhã.
+- **Dados de teste:** o `TARGET=store` apaga a conta e o produto no fim. O pedido fica, porque não há `DELETE /orders`.
+
+## Execução gravada
+
+A execução do vídeo (LT-02) entra aqui: o resumo do k6 e a sequência de réplicas do HPA.
+
+---
+
+*Autoria: `load/store.js`, `k8s/hpa.yaml` e `k8s/load-job.yaml` vêm da PR #1 de `adventurescumm` (16/11). Em 18/11, o agente do João (Claude) os adaptou ao EKS: incluiu o alvo `gateway` e o perfil `constant`, tirou as credenciais do resumo, fixou a imagem por digest e fez a calibração. Esta página foi escrita com auxílio de IA, como o enunciado permite para a documentação.*
