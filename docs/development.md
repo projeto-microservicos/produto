@@ -77,4 +77,4 @@ python -m mkdocs serve
 
 Os PRs do agregador validam a documentação. Os testes de cada serviço continuam no CI/CD do respectivo repositório.
 
-O workflow `integration.yml` também constrói os seis serviços fixados nos submodules, verifica o fluxo pelo gateway e roda o perfil curto k6. Ele só funcionará com esta implementação depois de publicar os commits alterados nos repositórios dos serviços e atualizar os gitlinks. Não faz deploy AWS.
+O workflow `integration.yml` é uma verificação de integração local: constrói os seis serviços fixados nos submodules, verifica o fluxo pelo gateway e roda o perfil curto k6. O runner precisa conseguir clonar cada repositório, inclusive o produto privado, e inicializar a configuração local antes do Compose. Ele não faz deploy AWS; o caminho de produção está em [CI/CD](ci-cd.md).

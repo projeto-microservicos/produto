@@ -1,6 +1,6 @@
 # Mensageria (EDA)
 
-Escolhemos o gargalo de **mensageria**. O enunciado o define como *"Decoupling components to handle asynchronous tasks. Use message queues like RabbitMQ or Apache Kafka."*
+Escolhemos o gargalo de **mensageria**: desacoplar tarefas assíncronas por meio de filas. Usamos RabbitMQ para que a confirmação dos pedidos não faça parte do tempo de resposta da criação.
 
 Desacoplamos a **confirmação do pedido** do `POST /orders`. Ela é o "e-mail" de confirmação; como o projeto não tem servidor de e-mail, uma linha de log faz esse papel. Se ela rodasse dentro da requisição, o tempo do envio entraria na latência de cada pedido, e uma falha do envio derrubaria a criação do pedido. Com a fila, o pedido responde assim que fica gravado, e a confirmação sai depois, num consumidor.
 

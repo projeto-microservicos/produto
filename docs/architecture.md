@@ -1,45 +1,44 @@
 # Arquitetura e contratos
 
-O cliente acessa o gateway. O gateway valida o token e define `id-account` com o UUID da conta autenticada, sobrescrevendo qualquer identidade fornecida pelo cliente. Os serviços internos confiam nesse header dentro da rede autorizada.
+A loja separa autenticação, contas, catálogo, pedidos e cotações em serviços independentes. O gateway é a entrada da aplicação; chamadas internas usam os Services do Kubernetes no namespace `store`.
 
-| Origem | Requisição | Destino e identidade |
+![Serviços, dados e entrega contínua](img/arquitetura.svg)
+
+## Caminho de uma requisição
+
+1. O cliente chega ao NLB, que encaminha ao gateway.
+2. Em uma rota protegida, o gateway envia o token ao auth em `POST /auth/solve`.
+3. O gateway remove qualquer `id-account` fornecido pelo cliente e insere a identidade resolvida.
+4. O serviço de destino aplica suas regras de negócio e propriedade dos dados.
+
+Cadastro, login, logout e refresh são abertos no gateway. `/auth/solve` e `/accounts/login` são internos e recebem 404 quando acessados por ele. As demais rotas de conta exigem token e só permitem ler ou excluir a conta autenticada. O auth usa o account por HTTP; não lê diretamente suas tabelas.
+
+| Origem | Destino interno | Contrato |
 |---|---|---|
-| Cliente via gateway | `/products/*` | `http://product:8080`; gateway fornece `id-account` |
-| Cliente via gateway | `/exchanges/*` | `http://exchange:8080`; gateway fornece `id-account` |
-| order | `GET /products/{id}` | `http://product:8080`; repassa `id-account` |
-| order | `GET /exchanges/USD/{currency}` | `http://exchange:8080`; repassa `id-account` |
+| gateway | `auth:8080` | Resolve o token e obtém `idAccount` |
+| gateway | account, product, order e exchange na porta 8080 | Encaminha a chamada com `id-account` confiável |
+| auth | `account:8080/accounts` e `/accounts/login` | Cadastro e verificação de credenciais |
+| order | `product:8080/products/{id}` | Obtém o preço em USD antes de persistir |
+| order | `exchange:8080/exchanges/USD/{currency}` | Obtém a cotação de venda para converter a resposta |
+| relay de order | RabbitMQ, exchange `store.orders`, chave `created` | Publica o evento `OrderCreated` |
+| consumidor de order | Fila `orders.created` | Registra a confirmação e confirma a mensagem após o commit |
 
-As chamadas internas não precisam retornar ao gateway. Os nomes DNS curtos pressupõem Services no mesmo namespace. O gateway encaminha `/auth/**`, `/products/**`, `/orders/**` e `/exchanges/**`. Cadastro, login e logout são abertos. `/auth/solve` e todo `/accounts/**` ficam bloqueados externamente com 404; a conta autenticada é consultada por `/auth/me`. Assim, um cliente não pode listar ou excluir contas de outros usuários.
+## Dados e isolamento
 
-## Produto e câmbio consumidos por order
+Account, product e order usam o mesmo RDS PostgreSQL privado, com um usuário e schema por serviço: `accounts`, `products` e `orders`. Flyway mantém as tabelas. Auth não tem banco; exchange consulta a PTAX e mantém cotações em memória. A identidade da conta não entra no cache compartilhado de cotações.
 
-Produto retorna um objeto JSON com `id` e `price`, sendo o preço monetário em USD não negativo. O order usa o preço do serviço, sem aceitar totais enviados pelo cliente.
-
-```json
-{"id":"00000000-0000-0000-0000-000000000001","price":10.12}
-```
-
-Câmbio retorna JSON com `sell` positivo. O campo `buy` também pode ser retornado; order usa a cotação de venda para converter USD na moeda solicitada.
-
-O exchange consulta diretamente o BACEN/PTAX e retorna o último fechamento disponível, preservando a data. Para moedas diferentes de BRL, o cruzamento usa compra/venda em BRL da mesma data. A cobertura é AUD, BRL, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK e USD; outras moedas retornam 422 no provedor. Order e gateway mantêm o mesmo contrato HTTP.
+O produto guarda preços positivos em USD com duas casas decimais. O pedido consulta esses preços e conserva uma cópia deles. Um total enviado pelo cliente não é considerado. A leitura de pedido filtra simultaneamente o identificador do pedido e a conta, retornando 404 para outro dono.
 
 ```json
-{"sell":6.00,"buy":5.90}
+{"items":[{"idProduct":"UUID_DO_PRODUTO","quantity":2}]}
 ```
 
-O contrato consumido por order trata produto inexistente como 404 no provedor e moeda não suportada como 422 no provedor. Falhas de dependência resultam em 503 na API de pedidos. Esses comportamentos precisam ser verificados em integração com as implementações reais.
+A consulta `GET /orders/{id}?currency=BRL` usa `sell` do exchange e não modifica o pedido em USD. Produto inexistente gera 400 ao criar pedido; moeda sem cobertura gera 422; falha de dependência gera 503.
 
-## API de pedidos
+## Assíncrono e síncrono
 
-| Método e caminho | Comportamento |
-|---|---|
-| `POST /orders` | Cria pedido com preços consultados; retorna 201 |
-| `GET /orders` | Lista pedidos da conta atual |
-| `GET /orders/{id}` | Detalhes em USD; pedido de outra conta retorna 404 |
-| `GET /orders/{id}?currency=BRL` | Converte a resposta sem alterar valores persistidos |
+Preço e câmbio são dependências HTTP. A confirmação do pedido é assíncrona: pedido e evento entram na mesma transação, o relay publica com confirmação do broker e o consumidor deduplica pelo `eventId`. Mensagens inválidas e falhas após as tentativas vão à DLQ. Veja as [garantias e limites da mensageria](mensageria.md), inclusive o armazenamento temporário do RabbitMQ.
 
-```json
-{"items":[{"idProduct":"00000000-0000-0000-0000-000000000001","quantity":2}]}
-```
+## Contratos completos
 
-O serviço de pedidos persiste seus dados no schema `orders` do PostgreSQL. Seu build não inclui o código dos provedores HTTP.
+As páginas de [gateway](services/gateway.md), [auth](services/auth.md), [account](services/account.md), [product](services/product.md), [order](services/order.md) e [exchange](services/exchange.md) detalham endpoints, health-checks e execução. A [infraestrutura](deployment.md) e o [CI/CD](ci-cd.md) completam o caminho de operação.

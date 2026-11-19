@@ -1,0 +1,81 @@
+{
+  "title": "Loja em microsservicos - EKS Ohio",
+  "estimate_date": "2026-11-19",
+  "currency": "USD",
+  "region": "us-east-2",
+  "hours_per_month": 730,
+  "public_url": "https://calculator.aws/#/estimate?id=8694ae17668ebc72f35152c53c51a062a77c80b7",
+  "monthly_total": 242.7,
+  "upfront_total": 0,
+  "annual_total": 2912.4,
+  "reference_plan_monthly_total": 242.65,
+  "services": [
+    {
+      "service": "Amazon EKS",
+      "inputs": {
+        "standard_support_clusters": 1
+      },
+      "monthly_cost": 73.0
+    },
+    {
+      "service": "Amazon EC2 and EBS",
+      "inputs": {
+        "instances": 3,
+        "instance_type": "t2.small",
+        "operating_system": "Linux",
+        "tenancy": "Shared",
+        "pricing": "On-Demand",
+        "utilization_percent": 100,
+        "gp3_gb_per_instance": 20
+      },
+      "monthly_cost": 55.17
+    },
+    {
+      "service": "Amazon VPC",
+      "inputs": {
+        "zonal_nat_gateways": 2,
+        "gb_processed_per_nat_gateway_month": 0.5,
+        "in_use_public_ipv4": 5,
+        "idle_public_ipv4": 0
+      },
+      "monthly_cost": 83.99
+    },
+    {
+      "service": "Elastic Load Balancing",
+      "inputs": {
+        "network_load_balancers": 1,
+        "tcp_gb_per_month": 1
+      },
+      "monthly_cost": 16.44
+    },
+    {
+      "service": "Amazon RDS for PostgreSQL",
+      "inputs": {
+        "instances": 1,
+        "instance_type": "db.t4g.micro",
+        "deployment": "Single-AZ",
+        "gp3_gb": 20,
+        "pricing": "On-Demand",
+        "utilization_percent": 100,
+        "rds_proxy": false,
+        "paid_database_insights": false,
+        "extended_support": false
+      },
+      "monthly_cost": 13.98
+    },
+    {
+      "service": "Amazon ECR",
+      "inputs": {
+        "stored_gb": 1.2,
+        "repositories": 6
+      },
+      "monthly_cost": 0.12
+    }
+  ],
+  "notes": [
+    "Memoria das premissas e dos totais conferidos no link publico; este arquivo nao e um formato de importacao da AWS.",
+    "Sem impostos, creditos, suporte adicional ou desconto da agenda noturna.",
+    "1 GB/mes TCP no NLB e uma hipotese de uso para calcular LCUs, nao uma medicao.",
+    "A diferenca de USD 0.05 para o plano decorre do trafego NAT/NLB e dos arredondamentos por servico."
+  ]
+}

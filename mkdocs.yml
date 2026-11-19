@@ -1,19 +1,32 @@
 site_name: Projeto de microsserviços
 site_description: Contratos, operação e documentação da equipe
 repo_url: https://github.com/projeto-microservicos/produto
-site_url: !ENV [SITE_URL, '']
+site_url: !ENV [SITE_URL, 'https://projeto-microservicos.github.io/produto/']
 theme:
   name: mkdocs
   locale: pt_BR
 nav:
   - Início: index.md
-  - Arquitetura e contratos: architecture.md
-  - Mensageria (EDA): mensageria.md
-  - Desenvolvimento: development.md
-  - Testes de carga e HPA: load-testing.md
-  - Resultados da validação: validation.md
-  - Deploy e capacidade: deployment.md
+  - Arquitetura: architecture.md
+  - Serviços:
+      - Gateway: services/gateway.md
+      - Auth: services/auth.md
+      - Account: services/account.md
+      - Product: services/product.md
+      - Order: services/order.md
+      - Exchange: services/exchange.md
+  - Plataforma:
+      - AWS e EKS: deployment.md
+      - CI/CD: ci-cd.md
+      - Desenvolvimento local: development.md
+  - Evidências:
+      - Mensageria (EDA): mensageria.md
+      - Teste de carga e HPA: load-testing.md
+      - Resultados da validação: validation.md
   - Custos, PaaS e SLA: costs.md
+  - Apresentação:
+      - Roteiro, slides e vídeo: presentation.md
+      - Equipe e autoria: team.md
 markdown_extensions:
   - tables
   - fenced_code

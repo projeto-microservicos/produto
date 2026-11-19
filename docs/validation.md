@@ -1,5 +1,7 @@
 # Validação local — 16/11/2026
 
+Este registro preserva as execuções locais de 16/11. As menções a RDS, capacidade e publicação ainda pendentes descrevem aquela data. O estado de referência de 19/11 está em [AWS e EKS](deployment.md); evidências posteriores estão em [mensageria](mensageria.md) e [teste de carga](load-testing.md).
+
 ## Fluxo funcional e testes automatizados
 
 Os cinco projetos Java passaram no `mvn verify` com JDK 25: 53 testes aprovados e um teste de infraestrutura opcional ignorado. A execução Python/Bash em container Linux teve 76 testes aprovados e três ignorados, incluindo verificações que dependem de Redis/RabbitMQ ou kubectl real. Os três testes do renderer integrado também passaram. A documentação compila com `mkdocs build --strict` e os workflows passaram no actionlint.

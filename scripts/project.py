@@ -70,7 +70,19 @@ def main():
     elif args.command == "load":
         init()
         env = dict(os.environ, LOAD_PROFILE=args.profile)
-        run(*compose, "--profile", "load", "run", "--rm", "k6", env=env)
+
+        user_args = []
+        if os.name == "posix":
+            user_args = ["--user", f"{os.getuid()}:{os.getgid()}"]
+
+        run(
+            *compose,
+            "--profile", "load",
+            "run", "--rm",
+            *user_args,
+            "k6",
+            env=env
+        )
 
 
 if __name__ == "__main__":
