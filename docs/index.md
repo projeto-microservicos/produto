@@ -1,16 +1,33 @@
-# Projeto de microsserviços
+# Loja em microsserviços
 
-O projeto separa account, auth, gateway, product, exchange e order em repositórios independentes. Este agregador registra os commits usados em conjunto e centraliza os contratos e a operação.
+Seis serviços independentes compõem a loja: gateway, auth, account, product, order e exchange. A aplicação roda no Amazon EKS; o gateway recebe o tráfego do NLB, o RDS guarda os dados de negócio e o RabbitMQ desacopla a confirmação dos pedidos.
 
-| Serviço | Responsabilidade | Situação informada pela equipe |
-|---|---|---|
-| account | Contas | Lógica e testes implementados localmente; não implantado no EKS |
-| auth | Autenticação e tokens | Lógica e testes implementados localmente; EKS ainda usa versão anterior |
-| gateway | Entrada, validação do token e identidade da conta | Validação implementada localmente; EKS ainda usa versão anterior |
-| product | Consulta de produtos e preços | CRUD e testes implementados localmente; não implantado no EKS |
-| exchange | Cotações entre moedas | Implementação e pipelines publicadas; deploy AWS depende de configuração |
-| order | Pedidos, totais e conversão | Implementação e CI/CD publicados; deploy AWS depende de configuração |
+Esta documentação reúne a arquitetura, os contratos HTTP, a operação e as evidências da entrega. A referência de infraestrutura é o estado de **19/11/2026**, descrito em [AWS e EKS](deployment.md). As medições mantêm suas próprias datas e ambientes.
 
-O Compose da raiz reúne os seis serviços para validação local. As alterações nos submodules ainda precisam ser publicadas nos repositórios correspondentes. O EKS `eks-store`, em `us-east-2`, tem dois nós `t2.small`, Metrics Server e versões anteriores de auth/gateway. Em 16/11/2026 o usuário escolheu manter AWS preparada, sem novos gastos, com acesso previsto por port-forward. RDS e ampliação de capacidade não foram executados. Redis, RabbitMQ e a segunda réplica de order ficam desativados nesta fase.
+![Arquitetura da loja e entrega contínua](img/arquitetura.svg)
 
-Consulte [arquitetura e contratos](architecture.md), [desenvolvimento](development.md), [carga e HPA](load-testing.md), [deploy e capacidade](deployment.md) e [custos](costs.md).
+## Navegar pela entrega
+
+| Item da entrega | Onde conferir |
+|---|---|
+| Arquitetura e comunicação entre serviços | [Arquitetura e contratos](architecture.md) |
+| Função, endpoints e execução de cada serviço | [Gateway](services/gateway.md), [auth](services/auth.md), [account](services/account.md), [product](services/product.md), [order](services/order.md) e [exchange](services/exchange.md) |
+| Health-checks dos seis serviços | [Tabela de operação](deployment.md#health-checks-e-probes) e página de cada serviço |
+| Kubernetes e infraestrutura AWS | [AWS e EKS](deployment.md) |
+| Testes, imagens e implantação | [CI/CD com GitHub Actions, ECR e OIDC](ci-cd.md) |
+| Gargalo escolhido e evidências | [Mensageria e EDA](mensageria.md) |
+| Carga em Spring Boot e escalonamento | [Teste de carga e HPA](load-testing.md) |
+| Serviços gerenciados, plano de gastos e disponibilidade | [Custos, PaaS e SLA](costs.md) |
+| Roteiro, slides e vídeo | [Apresentação](presentation.md) |
+| Responsabilidades e uso de IA | [Equipe e autoria](team.md) |
+| Reprodução local e resultados históricos | [Desenvolvimento local](development.md) e [validação](validation.md) |
+
+## Fluxo demonstrado
+
+O cliente se cadastra e faz login pelo gateway, cria um produto e envia um pedido. O order consulta o preço no product, grava o pedido e o evento na mesma transação e devolve 201. Um relay publica o evento no RabbitMQ; o consumidor confirma o pedido depois, com deduplicação e DLQ. A conversão de uma consulta de pedido usa o exchange sem alterar os valores persistidos em USD.
+
+A apresentação terá de um a dois minutos. O [roteiro e os slides](presentation.md) estão preparados; a gravação, a edição e a inclusão do link final pertencem ao DOC-04.
+
+## Repositórios independentes
+
+Cada serviço tem seu próprio README, build, Dockerfile, manifests e workflow. O agregador fixa versões por submodules e publica o MkDocs no GitHub Pages. Os workflows de cada serviço são a referência de deploy no EKS; os scripts Python do agregador são ferramentas de preparação e laboratório.

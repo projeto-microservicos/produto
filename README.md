@@ -1,67 +1,56 @@
 # Projeto de microsserviços
 
-Repositório agregador da equipe: fixa versões dos serviços por submodules e publica a documentação com MkDocs no GitHub Pages. O catálogo contempla seis serviços; todos têm repositórios confirmados. Cada serviço mantém seu próprio build, Dockerfile, manifesto Kubernetes e CI/CD com ECR + OIDC.
+Agregador da loja da equipe: fixa versões dos seis serviços por submodules e publica a documentação com MkDocs no GitHub Pages. Cada serviço mantém seu próprio build, Dockerfile, manifests e GitHub Actions.
 
-## Executar o projeto completo
+**[Abrir a documentação publicada](https://projeto-microservicos.github.io/produto/).**
 
-Requisitos: Docker Desktop com containers Linux e Python 3.12+. Na raiz:
+## Arquitetura e operação
 
-```bash
-python scripts/project.py init
-python scripts/project.py doctor
-python scripts/project.py up --monitoring
-python scripts/project.py smoke
-python scripts/project.py load --profile smoke
-python scripts/project.py load --profile ramp
-```
+O ambiente de referência de 19/11/2026 é o EKS `eks-store`, em `us-east-2`, com três nós `t2.small`, RDS PostgreSQL privado e RabbitMQ no namespace `store`. O NLB expõe o gateway; os demais serviços ficam internos. Os nós desligam de 23:59 a 06:00, horário de Brasília.
 
-Gateway: <http://127.0.0.1:8080>. Prometheus: <http://127.0.0.1:9090>. Grafana: <http://127.0.0.1:3000>, usuário `admin` e senha gerada em `.env`. O dashboard **Store — tráfego, erros e latência** é provisionado automaticamente. Apenas o gateway e as interfaces locais de observabilidade publicam portas no host; os bancos ficam na rede Docker.
+- [Arquitetura e contratos](docs/architecture.md)
+- [Seis serviços e health-checks](docs/index.md)
+- [AWS e EKS](docs/deployment.md)
+- [CI/CD com GitHub Actions, ECR e OIDC](docs/ci-cd.md)
+- [Mensageria e EDA](docs/mensageria.md)
+- [Teste de carga e HPA](docs/load-testing.md)
+- [Custos, PaaS e SLA](docs/costs.md)
+- [Equipe e autoria](docs/team.md)
 
-O Compose da raiz evita a colisão de porta entre account e exchange dos Composes individuais. Os fluxos de conta, JWT, produtos e autenticação do gateway estão implementados nesta revisão local. As alterações em `services/` pertencem aos respectivos submodules e precisam ser publicadas nesses repositórios antes de atualizar os gitlinks do agregador.
+O caminho de release do EKS é o workflow de cada serviço. Os scripts Python e templates do agregador são ferramentas de laboratório e preparação; não substituem esse fluxo.
 
-Para parar preservando os bancos: `python scripts/project.py down`. Instruções completas: [desenvolvimento](docs/development.md), [carga e HPA](docs/load-testing.md), [PaaS e custos](docs/costs.md) e [preparação AWS](docs/deployment.md).
+## Desenvolvimento local
 
-Os [resultados da validação](docs/validation.md) registram testes, carga medida e as pendências da entrega.
-
-Decisão de 16/11/2026: manter AWS preparada, sem criar recursos ou ampliar nós; acesso futuro via port-forward. O EKS existente não foi alterado por essa preparação.
-
-## Preparação inicial
-
-Este é o repositório principal [projeto-microservicos/produto](https://github.com/projeto-microservicos/produto). O catálogo `repositories.json` registra as URLs confirmadas de account, auth, gateway, product, exchange e order. O catálogo dos seis serviços está completo.
-
-Em um checkout do repositório principal, execute:
-
-```bash
-python scripts/register-submodules.py
-git diff --cached
-```
-
-O script valida os endereços preenchidos antes de registrar os submodules em `services/` e lista os pendentes. Ele cria `.gitmodules` e gitlinks reais para os commits clonados; não faz commit ou push. Ao receber novas URLs, atualize o catálogo e execute o script novamente. Se esta pasta ainda não tiver seu próprio repositório Git, inicialize primeiro com `git init -b main`.
-
-Depois de revisar e versionar os arquivos do agregador, novos clones usam:
+Requisitos: Docker Desktop com containers Linux e Python 3.12+. Clone os serviços nas versões fixadas:
 
 ```bash
 git clone --recurse-submodules https://github.com/projeto-microservicos/produto.git
+cd produto
+git submodule update --init --recursive
+python scripts/project.py init
+python scripts/project.py up --monitoring
+python scripts/project.py smoke
 ```
 
-Se account/auth precisarem também de repositórios de bibliotecas compartilhadas, registre-os conforme o build real desses serviços. Este catálogo inicial representa os seis serviços informados pela equipe.
+O Compose local publica o gateway em `http://127.0.0.1:8080`, Prometheus em `http://127.0.0.1:9090` e Grafana em `http://127.0.0.1:3000`. As senhas ficam no `.env` local. Para parar preservando os dados, use `python scripts/project.py down`. Consulte [desenvolvimento local](docs/development.md) para testes, carga e atualização de gitlinks.
 
-Os gitlinks fixam commits publicados nos repositórios dos serviços. A referência de order inclui a migração publicada para GitHub Actions, e exchange inclui a API Python, os gargalos opcionais e as pipelines Jenkins/GitHub Actions. A preparação do agregador não faz deploy dos serviços.
+Os resultados em [validação](docs/validation.md) são registros datados; as medições locais não estimam a capacidade do EKS.
 
-## Documentação local
+## Documentação local e publicação
 
 ```bash
 python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
 # PowerShell: .venv/Scripts/Activate.ps1
+# Linux/macOS: source .venv/bin/activate
 python -m pip install -r requirements.txt
+python -m mkdocs build --strict
 python -m mkdocs serve
 ```
 
-Validação: `python -m mkdocs build --strict`. A documentação não depende de clonar os submodules para compilar.
+O workflow `docs.yml` valida as PRs. Após revisão e merge na `main`, publica o Pages quando `PAGES_ENABLED=true` e o ambiente `github-pages` permite o deploy. A documentação compila sem clonar os submodules. O catálogo `repositories.json` e o script `scripts/register-submodules.py` mantêm o registro inicial dos repositórios.
 
-## GitHub Pages
+## Apresentação
 
-Em **Settings → Pages → Build and deployment**, selecione **GitHub Actions**. Configure a variável Actions `PAGES_ENABLED=true`. O workflow `docs.yml` valida PRs e publica a documentação nos pushes de `main`, ou por execução manual em `main`. O endereço publicado aparece no job de deploy. Ele usa o domínio padrão `github.io`, sem contratação de domínio ou recurso AWS.
+O [roteiro de 1min50s](docs/presentation.md) acompanha os [slides editáveis](docs/assets/apresentacao.pptx) e a [versão PDF](docs/assets/apresentacao.pdf). Para regenerar os arquivos, instale `presentation/requirements.txt` e execute `python presentation/build.py`. A gravação e a inclusão do vídeo final pertencem ao DOC-04.
 
-Consulte [custos e responsabilidades](docs/costs.md) antes de ativar recursos pagos. O pipeline da documentação publica o site estático; a implantação dos serviços segue o roteiro separado de AWS.
+A distribuição de responsabilidades e a assistência de IA estão descritas em [equipe e autoria](docs/team.md) e nos READMEs dos serviços.

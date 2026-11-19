@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="840" viewBox="0 0 1440 840" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitetura da loja no Amazon EKS</title>
+  <desc id="desc">Cliente acessa NLB e gateway. Gateway roteia para auth, account, product, order e exchange. Auth consulta account. Account, product e order usam schemas separados em um RDS privado. Order publica em RabbitMQ e seu consumidor processa os eventos. GitHub Actions publica no ECR e implanta no EKS.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#7dd3c8" stroke-width="1.5"/></marker>
+    <style>
+      text{font-family:Arial,sans-serif;fill:#ecf3fb} .title{font-size:29px;font-weight:700} .label{font-size:22px;font-weight:700} .small{font-size:17px;fill:#b1c4d8} .tiny{font-size:15px;fill:#b1c4d8} .node{fill:#182c44;stroke:#3d5b77;stroke-width:2} .edge{fill:none;stroke:#7dd3c8;stroke-width:2.5;marker-end:url(#arrow)} .data{fill:none;stroke:#7f98b3;stroke-width:2;stroke-dasharray:6 5;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1440" height="840" rx="18" fill="#0c1a2b"/>
+  <text x="48" y="55" class="title">Loja no EKS</text>
+  <text x="1392" y="52" class="small" text-anchor="end">us-east-2 · namespace store</text>
+
+  <path d="M310 127H405" class="edge"/>
+  <rect x="100" y="90" width="210" height="76" rx="12" class="node"/>
+  <text x="205" y="137" text-anchor="middle" class="label">Cliente</text>
+  <rect x="410" y="90" width="225" height="76" rx="12" fill="#164047" stroke="#7dd3c8" stroke-width="2"/>
+  <text x="522" y="124" text-anchor="middle" class="label">NLB</text>
+  <text x="522" y="148" text-anchor="middle" class="tiny">gateway-public</text>
+  <text x="790" y="135" class="small">Única entrada pública da aplicação</text>
+
+  <rect x="48" y="203" width="1344" height="426" rx="18" fill="#102238" stroke="#426481" stroke-dasharray="8 6"/>
+  <path d="M635 127H720V233" class="edge"/>
+  <text x="77" y="240" class="small">eks-store · 3 × t2.small</text>
+  <rect x="605" y="235" width="230" height="76" rx="12" fill="#164047" stroke="#7dd3c8" stroke-width="2"/>
+  <text x="720" y="266" text-anchor="middle" class="label">gateway</text>
+  <text x="720" y="291" text-anchor="middle" class="tiny">roteamento + identidade</text>
+  <path d="M720 311V342H195V370M720 342H1245V370M457 342V370M720 342V370M982 342V370" class="edge"/>
+
+  <rect x="85" y="375" width="220" height="78" rx="12" class="node"/>
+  <rect x="347" y="375" width="220" height="78" rx="12" class="node"/>
+  <rect x="610" y="375" width="220" height="78" rx="12" class="node"/>
+  <rect x="872" y="375" width="220" height="78" rx="12" class="node"/>
+  <rect x="1135" y="375" width="220" height="78" rx="12" class="node"/>
+  <text x="195" y="410" text-anchor="middle" class="label">auth</text>
+  <text x="195" y="435" text-anchor="middle" class="tiny">access + refresh JWT</text>
+  <text x="457" y="410" text-anchor="middle" class="label">account</text>
+  <text x="457" y="435" text-anchor="middle" class="tiny">contas + BCrypt</text>
+  <text x="720" y="410" text-anchor="middle" class="label">product</text>
+  <text x="720" y="435" text-anchor="middle" class="tiny">catálogo + preços USD</text>
+  <text x="982" y="410" text-anchor="middle" class="label">order</text>
+  <text x="982" y="435" text-anchor="middle" class="tiny">pedidos + consumidor</text>
+  <text x="1245" y="410" text-anchor="middle" class="label">exchange</text>
+  <text x="1245" y="435" text-anchor="middle" class="tiny">PTAX + cache em memória</text>
+  <path d="M305 413H344" class="edge"/>
+  <path d="M872 414H830" class="data"/>
+  <path d="M1092 414H1135" class="data"/>
+  <text x="77" y="524" class="small">Services internos</text>
+  <text x="77" y="550" class="small">ClusterIP · HTTP 8080</text>
+  <text x="77" y="584" class="tiny">Gateway define a identidade.</text>
+
+  <path d="M982 453V501H1140V525" class="edge"/>
+  <path d="M1040 560H982V478" class="data"/>
+  <rect x="1040" y="530" width="285" height="66" rx="12" fill="#41352b" stroke="#f3b879" stroke-width="2"/>
+  <text x="1182" y="558" text-anchor="middle" class="label">RabbitMQ</text>
+  <text x="1182" y="582" text-anchor="middle" class="tiny">OrderCreated → confirmação</text>
+
+  <path d="M457 453V663M720 453V663M982 453V644H835V663" class="data"/>
+  <rect x="347" y="668" width="530" height="80" rx="12" fill="#20324c" stroke="#8da7cb" stroke-width="2"/>
+  <text x="612" y="702" text-anchor="middle" class="label">RDS PostgreSQL privado</text>
+  <text x="612" y="730" text-anchor="middle" class="small">accounts · products · orders</text>
+  <text x="78" y="710" class="small">Usuário e schema</text>
+  <text x="78" y="736" class="small">por serviço</text>
+  <path d="M1245 453H1370V650H1245V675" class="data"/>
+  <text x="1245" y="709" text-anchor="middle" class="label">BCB / PTAX</text>
+  <text x="1245" y="735" text-anchor="middle" class="tiny">saída HTTPS via NAT</text>
+
+  <text x="48" y="803" class="small">Entrega contínua</text>
+  <text x="390" y="803" text-anchor="middle" class="label">GitHub Actions</text>
+  <path d="M508 794H612" class="edge"/>
+  <text x="691" y="803" text-anchor="middle" class="label">ECR</text>
+  <path d="M750 794H855" class="edge"/>
+  <text x="945" y="803" text-anchor="middle" class="label">EKS</text>
+  <text x="1392" y="802" text-anchor="end" class="small">OIDC · imagem por digest</text>
+</svg>

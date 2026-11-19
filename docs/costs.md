@@ -81,7 +81,11 @@ O enunciado pede a estimativa na [AWS Pricing Calculator](https://calculator.aws
 - **Amazon RDS for PostgreSQL:** db.t4g.micro, Single-AZ, 20 GB gp3.
 - **Amazon ECR:** 1,2 GB.
 
-Link da estimativa salva: _a incluir_.
+**[Abrir a estimativa pública salva em 19/11/2026](https://calculator.aws/#/estimate?id=8694ae17668ebc72f35152c53c51a062a77c80b7).** O total é **US$ 242,70/mês**, sem impostos, **US$ 0,05 acima** dos US$ 242,65 do plano. A pequena diferença vem do processamento de 1 GB/mês nos NATs, da hipótese adicional de 1 GB de tráfego TCP por mês no NLB e dos arredondamentos por serviço da Calculator.
+
+O tráfego dos NATs foi dividido em 0,5 GB por gateway. Para o NLB, a hipótese de 1 GB/mês permite estimar o componente variável exigido pela Calculator; não é uma medição de uso. A comparação mantém 730 h/mês, sem descontar a agenda noturna dos nós, créditos ou impostos. Não inclui RDS Proxy, suporte estendido do PostgreSQL, Database Insights pago ou suporte AWS adicional.
+
+[Baixar as premissas e os totais conferidos (JSON)](assets/aws-pricing-estimate.json).
 
 ## Onde usamos PaaS
 
