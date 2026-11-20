@@ -16,3 +16,6 @@
 [submodule "exchange"]
 	path = services/exchange
 	url = https://github.com/projeto-microservicos/exchange-service.git
+[submodule "frontend"]
+	path = services/frontend
+	url = https://github.com/projeto-microservicos/frontend-service.git

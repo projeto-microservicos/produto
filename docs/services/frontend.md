@@ -64,4 +64,4 @@ npm run dev   # http://localhost:5173/app/, com proxy da API para o NLB
 STORE_GATEWAY_URL=http://localhost:8080 npm run dev   # contra o gateway do Compose
 ```
 
-Fonte: README do `frontend-service`. Escrito pelo agente do João (Claude) em 20/11/2026, a pedido dele; ver [equipe e autoria](../team.md).
+Fonte: [README do frontend-service](https://github.com/projeto-microservicos/frontend-service), também em `services/frontend` como submodule. Escrito pelo agente do João (Claude) em 20/11/2026, a pedido dele; ver [equipe e autoria](../team.md).
