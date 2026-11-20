@@ -2,7 +2,7 @@
 
 A apresentação tem **1 minuto e 50 segundos**, com dez segundos de margem até o limite de dois minutos. O roteiro combina quatro slides com três trechos reais do EKS: visão dos pods, carga/HPA e mensageria. João grava e edita esses trechos no DOC-04.
 
-**Vídeo final** (1 min 57 s, legendado em português):
+**Vídeo final** (1 min 57 s, legendado em português): **<https://youtu.be/MZCj2nR3Db8>**
 
 <video controls preload="metadata" width="100%" src="../assets/apresentacao.mp4"></video>
 
