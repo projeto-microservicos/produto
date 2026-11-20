@@ -35,7 +35,10 @@ def smoke(base_url, live_exchange=False):
         request("GET", "/products", expected=401)
         request("GET", "/products", token="invalid.jwt", expected=401)
         request("POST", "/auth/solve", {"token": token}, expected=404)
-        request("GET", "/accounts", token=token, expected=404)
+        # /accounts/login is internal (404); the other account routes only ever show the caller's own account.
+        request("POST", "/accounts/login", credentials, expected=404)
+        mine = request("GET", "/accounts", token=token)
+        assert [a["id"] for a in mine] == [account["id"]], "GET /accounts returned someone else's account"
         me = request("GET", "/auth/me", token=token, extra_headers={"id-account": "forged"})
         assert me["id"] == account["id"], "Gateway accepted a forged identity"
         request("POST", "/auth/login", {**credentials, "password": "wrong-password"}, expected=401)
