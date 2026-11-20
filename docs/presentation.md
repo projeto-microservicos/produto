@@ -6,7 +6,7 @@ A apresentação tem **1 minuto e 50 segundos**, com dez segundos de margem até
 
 <video controls preload="metadata" width="100%" src="../assets/apresentacao.mp4"></video>
 
-[Baixar o vídeo (MP4, 1080p)](assets/apresentacao.mp4) e as [legendas em SRT](assets/apresentacao.srt).
+[Baixar o vídeo (MP4, 1080p)](assets/apresentacao.mp4) e as [legendas em SRT](assets/apresentacao.srt). A documentação inteira também está em [PDF](assets/documentacao.pdf).
 
 ### Como o vídeo foi feito
 
