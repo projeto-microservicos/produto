@@ -2,7 +2,26 @@
 
 A apresentação tem **1 minuto e 50 segundos**, com dez segundos de margem até o limite de dois minutos. O roteiro combina quatro slides com três trechos reais do EKS: visão dos pods, carga/HPA e mensageria. João grava e edita esses trechos no DOC-04.
 
-**Vídeo final:** aguardando gravação, edição e publicação no DOC-04. O link de reprodução será incluído aqui quando estiver disponível.
+**Vídeo final** (1 min 57 s, legendado em português):
+
+<video controls preload="metadata" width="100%" src="../assets/apresentacao.mp4"></video>
+
+[Baixar o vídeo (MP4, 1080p)](assets/apresentacao.mp4) e as [legendas em SRT](assets/apresentacao.srt).
+
+### Como o vídeo foi feito
+
+O vídeo foi gravado em 20/11/2026 contra o EKS de verdade, sem montagem de telas. O agente do João (Claude) roteirizou e gravou as partes:
+
+| Tempo | Trecho | Origem |
+|---|---|---|
+| 0:00–0:19 | Slides 1 e 2 (introdução e arquitetura) | slides deste repositório |
+| 0:19–0:44 | Demo no [front end](services/frontend.md): cadastro, pedido, cupom em BRL e EUR, câmbio, Sistema | navegador automatizado contra o NLB, 1,3× |
+| 0:44–0:54 | Nós, pods e Services no `store` | `kubectl` real, 1,5×, pausas encurtadas |
+| 0:54–1:12 | k6 com 150 usuários, HPA e pods do gateway | três terminais reais gravados juntos, 22× |
+| 1:12–1:36 | Slide 3 e `scripts/demo-eda.sh` | terminal real, 12× uniforme |
+| 1:36–1:57 | Custos (desligamento noturno: só ~5%) e conclusão | slide de custos e slide 4 |
+
+Os trechos acelerados mostram a velocidade na tela. Os terminais foram gravados como sessões reais e reproduzidos com o asciinema-player; nada foi digitado à mão nem editado. As ferramentas ficam fora dos repositórios.
 
 ## Slides
 

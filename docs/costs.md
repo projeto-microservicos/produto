@@ -60,9 +60,12 @@ Ficam de fora o tráfego variável (processamento dos NATs, LCUs do NLB, saída 
 | Infra de 17/11 (acima) | — | 242,65 |
 | RabbitMQ dentro do cluster (`emptyDir`) | 0, cabe nos 3 nós | 242,65 |
 | 4º nó para o HPA do teste de carga | +16,79 de EC2 e +1,60 de disco | 261,04 |
+| Nós desligados das 23:59 às 06:00 (usado de 17 a 19/11) | −12,59, só o EC2 dos nós; os discos continuam | 230,06 |
 | 1 NAT em vez de 2, sem redundância entre AZs | −32,85 | 209,80 |
 | Nós só em subnets privadas, sem o IPv4 do nó | −3,65 | 239,00 |
 | RDS Multi-AZ, para o SLA de 99,95% | +11,68 de instância e +2,30 de disco | 256,63 |
+
+**O desligamento noturno economizou pouco.** De 17 a 19/11, um agendamento no Auto Scaling Group zerava os 3 nós das 23:59 às 06:00 (`infra/scheduler/nos-noturno.sh`). Eram 6 de 24 horas do EC2 dos nós: ~US$ 0,41 por noite, ~US$ 12,59 por mês, **cerca de 5% da conta**. O resto não para à noite: EKS, NATs, NLB, IPv4 e RDS (~77% do total) cobram por hora, com ou sem nó. Para economizar de verdade, seria preciso tirar o segundo NAT (−13,5%) ou desligar o ambiente inteiro fora das avaliações. Em 20/11, dia da entrega, o agendamento foi removido para o sistema ficar no ar o tempo todo.
 
 ### Controle e encerramento
 

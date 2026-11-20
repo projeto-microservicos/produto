@@ -141,6 +141,8 @@ Rampa completa de 7 min pelo NLB, de uma máquina fora da AWS, contra o `/gatewa
 
 O p95 ficou igual ao da calibração de 18/11 (154 ms contra 162 ms). Ele é dominado pela rede até us-east-2: o gateway não saturou. Os picos de CPU de um pod logo depois de criado (867m e 888m) são o aquecimento da JVM. Por isso o HPA lê médias acima de 100% por cerca de 1 minuto depois de cada escala.
 
+**Execução da gravação do vídeo (20/11, 18:20).** Carga constante de 150 VUs por 2 min 30 s (`LOAD_PROFILE=constant DURATION=150s`), sem rampa: 114.082 requisições, 760 req/s, p95 de 216 ms e 0% de falhas. O HPA subiu de 1 para 2 réplicas quando a CPU chegou a 84% do alvo. Com 2 réplicas, a CPU ficou em ~40%, abaixo dos 50%, e a 3ª não foi necessária. Cerca de 2,5 min depois do fim da carga, o HPA voltou a 1. Na rampa da manhã, os picos de aquecimento da JVM das réplicas novas tinham empurrado até 3.
+
 O HPA foi apagado no fim, como pede o enunciado. A gravação do vídeo (trecho B da [apresentação](presentation.md)) repete os mesmos passos e mostra os três terminais.
 
 ---

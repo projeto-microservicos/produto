@@ -1,0 +1,104 @@
+1
+00:00:00,300 --> 00:00:03,800
+Uma loja online em seis microsserviços, rodando no Amazon EKS.
+
+2
+00:00:03,800 --> 00:00:07,300
+Vamos mostrar a arquitetura, a escala automática e a mensageria.
+
+3
+00:00:07,700 --> 00:00:11,500
+Só o gateway é público, atrás de um Network Load Balancer.
+
+4
+00:00:11,500 --> 00:00:15,300
+O auth valida o token. Account, product e order usam o RDS.
+
+5
+00:00:15,300 --> 00:00:18,800
+O exchange cota pela PTAX, e o CI faz o deploy no EKS.
+
+6
+00:00:19,277 --> 00:00:22,138
+Demo no front end, servido pelo próprio gateway em /app.
+
+7
+00:00:22,138 --> 00:00:25,092
+Cadastro e login passam pelo gateway e pelo auth.
+
+8
+00:00:25,277 --> 00:00:30,354
+No catálogo, os preços ficam em dólar. Montamos a sacola e fechamos o pedido.
+
+9
+00:00:30,538 --> 00:00:33,492
+O cupom converte o total pela PTAX do Banco Central: em real...
+
+10
+00:00:33,585 --> 00:00:36,631
+...e em euro. O pedido continua gravado em dólar.
+
+11
+00:00:36,723 --> 00:00:41,338
+Câmbio pela PTAX e, na página Sistema, os seis serviços respondendo.
+
+12
+00:00:43,867 --> 00:00:48,067
+No mesmo cluster EKS: os seis serviços, o front end e o RabbitMQ.
+
+13
+00:00:48,067 --> 00:00:52,167
+Só o gateway-public é LoadBalancer; todo o resto é ClusterIP.
+
+14
+00:00:54,133 --> 00:00:57,933
+k6 com 150 usuários contra o gateway, pelo NLB: ~760 requisições por segundo.
+
+15
+00:00:57,933 --> 00:01:02,333
+A CPU chega a 84% do alvo, e o HPA sobe o gateway de 1 para 2 réplicas.
+
+16
+00:01:02,333 --> 00:01:06,933
+Com 2 réplicas, a CPU cai para ~40%, e a 3ª não é necessária. Zero falhas.
+
+17
+00:01:06,933 --> 00:01:11,333
+Sem carga, depois da janela de 2 minutos, o HPA volta para 1 réplica.
+
+18
+00:01:11,800 --> 00:01:17,400
+O gargalo escolhido: confirmar o pedido sem prender a requisição.
+
+19
+00:01:17,900 --> 00:01:22,500
+RabbitMQ fora do ar: os pedidos seguem respondendo 201 e esperam na outbox.
+
+20
+00:01:22,500 --> 00:01:24,900
+Ele volta: cada pedido é confirmado uma vez só.
+
+21
+00:01:24,900 --> 00:01:27,800
+A mensagem inválida vai para a DLQ, sem loop.
+
+22
+00:01:27,800 --> 00:01:33,600
+Consumidor lento: o POST segue em ~450 ms, e a fila absorve a espera.
+
+23
+00:01:35,867 --> 00:01:41,067
+Para baratear, desligávamos os nós do cluster das 23:59 às 06:00.
+
+24
+00:01:41,067 --> 00:01:46,467
+Mas isso só cortou ~5% da conta: EKS, NATs, NLB e RDS cobram 24 h por dia.
+
+25
+00:01:46,867 --> 00:01:52,067
+adventurescumm começou order e exchange; João fez o resto, a AWS e o front end.
+
+26
+00:01:52,067 --> 00:01:56,967
+O uso de IA está declarado nos READMEs. Código e evidências na documentação.
+
