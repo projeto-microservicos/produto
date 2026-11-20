@@ -2,7 +2,7 @@
 
 Seis serviços independentes compõem a loja: gateway, auth, account, product, order e exchange. A aplicação roda no Amazon EKS; o gateway recebe o tráfego do NLB, o RDS guarda os dados de negócio e o RabbitMQ desacopla a confirmação dos pedidos.
 
-**Experimente:** a loja tem um [front end web](services/frontend.md) em <http://a488cbb85e8304108b4f9563359cf260-811be60b7d8b4e24.elb.us-east-2.amazonaws.com/app/>. Crie uma conta, monte um pedido e veja o cupom convertido pela PTAX. Os nós do EKS ficam desligados das 23:59 às 06:00 (Brasília).
+**Experimente:** a loja tem um [front end web](services/frontend.md) em <http://a488cbb85e8304108b4f9563359cf260-811be60b7d8b4e24.elb.us-east-2.amazonaws.com/app/>. Crie uma conta, monte um pedido e veja o cupom convertido pela PTAX.
 
 Esta documentação reúne a arquitetura, os contratos HTTP, a operação e as evidências da entrega. A referência de infraestrutura é o estado de **19/11/2026**, descrito em [AWS e EKS](deployment.md). As medições mantêm suas próprias datas e ambientes.
 

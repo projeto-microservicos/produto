@@ -36,12 +36,12 @@ O teste de carga completo dura vários minutos e a demonstração EDA também é
 
 ## Conferência antes de entregar
 
-1. Gravar com os nós ativos, fora do intervalo de 23:59 a 06:00, em Brasília.
+1. Conferir se os nós estão ativos (`kubectl get nodes`); desde 20/11 eles não desligam mais à noite.
 2. Conferir legibilidade do terminal, nomes dos serviços e números do HPA; ocultar tokens, senhas e dados pessoais.
 3. Usar as declarações de [autoria](team.md), incluindo o apoio de IA informado nos READMEs.
 4. Exportar o vídeo final entre 1 e 2 minutos e testar a reprodução sem depender da sessão do autor.
 5. Incluir o link definitivo no começo desta página e abrir a revisão da alteração.
 
-A entrega dos materiais para revisão está prevista para **20/11 de manhã**. O prazo de **20/11 às 23:59**, citado no quadro, é provável e deve ser confirmado com o João.
+Prazo da entrega: **20/11/2026 às 23:59** (confirmado pelo João).
 
 Fontes: [arquitetura](architecture.md), [mensageria](mensageria.md), [teste de carga](load-testing.md) e os READMEs ligados nas [páginas dos serviços](index.md#navegar-pela-entrega).

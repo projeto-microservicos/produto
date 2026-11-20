@@ -8,7 +8,7 @@ A referência operacional de **19/11/2026** é o cluster **`eks-store`**, em **U
 |---|---|
 | EKS | Plano de controle gerenciado do `eks-store` |
 | Nós | Três EC2 `t2.small`, distribuídos em duas zonas de disponibilidade |
-| Horário dos nós | Desligados de 23:59 a 06:00, horário de Brasília; a recriação pode alterar a distribuição dos pods |
+| Horário dos nós | Ligados o tempo todo desde 20/11 (entrega). Até 19/11 eram desligados de 23:59 a 06:00 (`infra/scheduler/nos-noturno.sh`); a recriação diária mudava a distribuição dos pods |
 | Entrada da aplicação | Um NLB, associado ao Service `gateway-public` |
 | Serviços internos | `gateway`, `auth`, `account`, `product`, `order` e `exchange` em `ClusterIP`, porta 8080 |
 | Banco | RDS PostgreSQL privado, `db.t4g.micro`, Single-AZ, 20 GiB gp3 |
@@ -31,7 +31,7 @@ kubectl --context eks-store -n store top pods
 kubectl --context eks-store -n store get hpa
 ```
 
-Confirme o destino antes de executar comandos de alteração. Durante o horário noturno, a ausência de nós de aplicação não significa que o plano de controle foi excluído.
+Confirme o destino antes de executar comandos de alteração. Se o desligamento noturno for religado (`nos-noturno.sh ligar`), a ausência de nós de aplicação à noite não significa que o plano de controle foi excluído.
 
 ## Health-checks e probes
 

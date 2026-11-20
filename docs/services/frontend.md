@@ -4,7 +4,7 @@ A loja tem uma interface web, a **Quitanda**, publicada pelo próprio gateway:
 
 **<http://a488cbb85e8304108b4f9563359cf260-811be60b7d8b4e24.elb.us-east-2.amazonaws.com/app/>**
 
-O endereço raiz (`/`) redireciona para `/app/`. Os nós do EKS ficam desligados das 23:59 às 06:00 (horário de Brasília), e nesse intervalo a página não abre.
+O endereço raiz (`/`) redireciona para `/app/`.
 
 É um SPA em React 19, TypeScript e Vite, servido por nginx sem root. O gateway encaminha `/app/**` para o Service `frontend`. Assim, a página e a API têm a mesma origem: não há CORS, segundo endereço público nem segundo balanceador.
 

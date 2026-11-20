@@ -27,7 +27,7 @@ Os dois testes tiveram o mesmo p95, que é basicamente o caminho de rede até us
 
 ## Antes de começar
 
-1. Os nós ficam desligados das 23:59 às 06:00 (horário de Brasília). Grave de dia.
+1. Confira se os 3 nós estão `Ready` (`kubectl get nodes`). O desligamento noturno foi removido em 20/11 e o cluster fica ligado o tempo todo.
 2. Confira se o metrics-server responde: `kubectl -n store top pods`.
 3. Confira se algum nó tem folga para mais **duas** réplicas do gateway: 200m de CPU, 640 MiB de memória reservada e 2 vagas de pod. Os nós são recriados toda manhã, então isso muda de um dia para o outro.
 
