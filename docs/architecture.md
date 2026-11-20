@@ -6,7 +6,7 @@ A loja separa autenticação, contas, catálogo, pedidos e cotações em serviç
 
 ## Caminho de uma requisição
 
-1. O cliente chega ao NLB, que encaminha ao gateway.
+1. O cliente chega ao NLB, que encaminha ao gateway. O navegador carrega o [front end](services/frontend.md) pelo mesmo endereço, em `/app/`, e faz as chamadas da API nessa mesma origem.
 2. Em uma rota protegida, o gateway envia o token ao auth em `POST /auth/solve`.
 3. O gateway remove qualquer `id-account` fornecido pelo cliente e insere a identidade resolvida.
 4. O serviço de destino aplica suas regras de negócio e propriedade dos dados.

@@ -8,6 +8,7 @@ As responsabilidades abaixo distinguem a implementação inicial das mudanças f
 | João, `joaorcmr` | Desde 17/11/2026 | Gateway, auth, account e product; infraestrutura AWS; integração e operação no EKS |
 | João, `joaorcmr` | Desde 17/11/2026 | Evolução de order/exchange: health-checks, consumidor idempotente, DLQ, RabbitMQ no cluster e adaptação PTAX/cache |
 | `adventurescumm`, com assistência do Codex | 19/11/2026 | Reorganização desta documentação, páginas dos serviços, estimativa da Calculator, roteiro e slides para revisão do João |
+| João, `joaorcmr`, com o Claude | 20/11/2026 | [Front end](services/frontend.md) (React, nginx e rota `/app/**` no gateway); correção da rota `/accounts` no gateway; teste de carga com HPA no EKS |
 
 ## Assistência de IA
 

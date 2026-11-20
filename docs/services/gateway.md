@@ -7,6 +7,7 @@ O gateway é a entrada HTTP da loja. Roteia chamadas para os cinco serviços int
 | Método e caminho | Destino e comportamento |
 |---|---|
 | `GET /gateway/health-check` | O próprio gateway responde 200, sem corpo e sem autenticação |
+| `GET /` e `GET /app/**` | [front end](frontend.md): `/` redireciona para `/app/`, e `/app/**` vai ao Service `frontend` sem token; outros métodos exigem token |
 | `/auth/**` | auth; cadastro, login, logout e renovação de token são abertos |
 | `/accounts/**` | account; exige token e restringe o acesso à própria conta |
 | `/products/**` | product; exige token |

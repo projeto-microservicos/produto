@@ -84,9 +84,32 @@ No fim, apague o HPA, como pede o enunciado: `kubectl -n store delete hpa gatewa
 - **Créditos de CPU do t2:** sob carga contínua, um t2.small cai para 20% de um vCPU quando os créditos acabam. Testes de até 10 min cabem com folga num nó ligado de manhã.
 - **Dados de teste:** o `TARGET=store` apaga a conta e o produto no fim. O pedido fica, porque não há `DELETE /orders`.
 
-## Execução gravada
+## Execução no EKS (20/11/2026)
 
-A execução do vídeo (LT-02) entra aqui: o resumo do k6 e a sequência de réplicas do HPA.
+Rampa completa de 7 min pelo NLB, de uma máquina fora da AWS, contra o `/gateway/health-check`. Gateway `572a8bd`, HPA de `k8s/hpa.yaml` (de 1 a 3 réplicas, alvo de 50% de 100m). Comando do terminal 3 acima, com `SUMMARY_FILE` para guardar o resumo.
+
+**k6:**
+
+| Requisições | Vazão média (rampa inteira) | Mediana | p95 | Máximo | Falhas | Thresholds |
+|---:|---:|---:|---:|---:|---:|---|
+| 261.706 | 623 req/s | 155 ms | 162 ms | 538 ms | 0,00% | os 3 passaram (`checks > 99%`, falhas < 1%, p95 < 1 s) |
+
+**HPA** (leitura de `kubectl get hpa` e `kubectl top pods` a cada ~13 s; horário de Brasília):
+
+| Hora | Carga | CPU do HPA (média sobre o request) | Réplicas |
+|---|---|---|---|
+| 09:35:42 | início, 1 → 5 VUs | 8% | 1 |
+| 09:36:35 | rampa | 47% | 1 |
+| 09:36:55 | rampa | 64%: acima do alvo | **1 → 2** (evento `SuccessfulRescale`) |
+| 09:37:26 | rampa | 188% (o pod novo sobe com a JVM ainda aquecendo) | **2 → 3** |
+| 09:38:08 a 09:39:15 | 150 VUs | de 66% a 132% enquanto as réplicas novas aquecem | 3 (o máximo) |
+| 09:39:29 a 09:42:09 | 150 VUs, depois a descida | de 40% a 49%, cada pod entre 15m e 71m | 3, estável abaixo do alvo |
+| 09:42:30 | fim da carga | cai para 2–5% | 3, aguardando os 120 s de estabilização |
+| 09:44:56 | — | abaixo do alvo | **3 → 1** (evento "All metrics below target") |
+
+O p95 ficou igual ao da calibração de 18/11 (154 ms contra 162 ms). Ele é dominado pela rede até us-east-2: o gateway não saturou. Os picos de CPU de um pod logo depois de criado (867m e 888m) são o aquecimento da JVM. Por isso o HPA lê médias acima de 100% por cerca de 1 minuto depois de cada escala.
+
+O HPA foi apagado no fim, como pede o enunciado. A gravação do vídeo (trecho B da [apresentação](presentation.md)) repete os mesmos passos e mostra os três terminais.
 
 ---
 

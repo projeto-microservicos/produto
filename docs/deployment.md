@@ -60,6 +60,16 @@ curl -i http://127.0.0.1:18080/gateway/health-check
 
 Cada serviço recebe os valores não sensíveis em `<serviço>-config`. Os segredos do banco, da assinatura JWT e do broker ficam em Secrets, preparados separadamente dos releases. O RDS aceita a rede autorizada dos nós; credenciais e schemas são separados por serviço. O banco e o broker não são publicados pelo NLB.
 
+O roteiro do minikube descreve os quatro recursos (Secret, ConfigMap, Deployment e Service) no mesmo `k8s.yaml`. Aqui eles estão divididos de propósito. Todo serviço tem Deployment, Service e ConfigMap no cluster; auth, account, product e order têm também um Secret. Gateway e exchange não guardam segredo, então não têm Secret:
+
+| Arquivo no repositório | Recursos | Aplicado por |
+|---|---|---|
+| `k8s/k8s.yaml` | Deployment e Service | o CI, a cada merge na `main` |
+| `k8s/config.example.yaml` | ConfigMap (modelo sem segredo) | à mão, uma vez, a partir de uma cópia local ignorada pelo git |
+| Secret `<serviço>-secrets` | senhas geradas aleatoriamente | à mão, só no cluster; o valor nunca passa pelo git |
+
+Os repositórios são públicos. Um Secret dentro do `k8s.yaml` versionaria a senha, ou obrigaria o CI a reescrever Secrets a cada deploy. As roles de deploy só podem atualizar Deployments e ler a configuração do próprio serviço; não listam nem apagam Secrets.
+
 O caminho de release é o [GitHub Actions de cada serviço, com ECR e OIDC](ci-cd.md). As pipelines atualizam a imagem por digest e aguardam o rollout. Não criam o RDS, não aumentam o node group e não sobrescrevem os Secrets. Os scripts Python do agregador permanecem como ferramentas de laboratório e preparação, e não são um segundo processo de release de produção.
 
 ## Mensageria e capacidade

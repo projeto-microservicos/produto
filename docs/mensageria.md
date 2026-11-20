@@ -87,6 +87,21 @@ rabbitmq_failed_to_publish_total                   0.0
 
 No fim, ele volta tudo ao normal.
 
+### Execução completa no EKS (20/11/2026, 09:42)
+
+`scripts/demo-eda.sh` pelo NLB, com 5 pedidos por etapa. Todos os `POST /orders` responderam 201.
+
+| Etapa | `POST /orders` (mediana) | Confirmados | Da gravação até a confirmação |
+|---|---|---|---|
+| 1. Linha de base | 374 ms | 5 de 5, uma vez cada | mediana de 0,7 s, máximo de 1,0 s |
+| 2. RabbitMQ com 0 réplicas | 349 ms | 0 com o broker fora; 5 de 5 depois que ele voltou | mediana de 34,8 s, máximo de 37,1 s |
+| 3. Mensagem envenenada | — | 1 rejeitada, na `orders.created.dlq`; fila principal vazia | sem loop |
+| 4. Consumidor lento (`ORDER_WORKER_DELAY=3s`) | 369 ms | 5 de 5 | de 3,4 s a 13,6 s, uma a cada ~2,6 s |
+
+- **Broker fora do ar:** a compra não percebeu a queda. A latência foi a mesma da linha de base, e a outbox registrou 14 tentativas de entrega falhas para repetir. Com o broker de volta, o relay reenviou com backoff exponencial (2, 4, 8, 16, 32 s), o que explica os ~35 s. Nenhum evento repetido chegou ao consumidor.
+- **Consumidor lento:** a fila acumulou (4, depois 2, depois 0 mensagens em processamento), mas o `POST` seguiu em ~370 ms. O primeiro `POST` (1.025 ms) foi o primeiro depois do rollout do order, com a JVM ainda fria.
+- No fim, o script tirou o `ORDER_WORKER_DELAY` (o order voltou ao mesmo ReplicaSet), deixou o RabbitMQ com 1 réplica e apagou a conta e o produto da demonstração. A mensagem envenenada fica na DLQ até o próximo restart do broker (`emptyDir`).
+
 ## Como conferir
 
 ```bash
