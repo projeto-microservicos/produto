@@ -43,6 +43,14 @@ Os dois testes tiveram o mesmo p95, que é basicamente o caminho de rede até us
 
 ## Como gravar (três terminais)
 
+Execute os comandos na raiz do repositório, onde está `load/store.js`, com o contexto do kubectl apontando para o EKS. Para obter o DNS do NLB, consulte o Service público do gateway:
+
+```bash
+kubectl -n store get service gateway-public -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+Substitua `<DNS do NLB>` nos comandos abaixo pelo hostname retornado, mantendo o prefixo `http://`.
+
 ```bash
 # Terminal 1: cria o HPA e acompanha a CPU e as réplicas
 kubectl -n store apply -f k8s/hpa.yaml
@@ -55,11 +63,35 @@ kubectl -n store get pods -l app=gateway -o wide -w
 ```
 
 ```bash
-# Terminal 3: a carga (rampa de 7 min, até 150 VUs)
+# Terminal 3, Linux/macOS/WSL: a carga (rampa de 7 min, até 150 VUs)
 docker run --rm -v "$PWD/load:/load:ro" \
-  -e BASE_URL=http://<DNS do NLB> -e TARGET=gateway -e LOAD_PROFILE=ramp -e MAX_VUS=150 -e SLEEP=0 \
+  -e BASE_URL="http://<DNS do NLB>" -e TARGET=gateway -e LOAD_PROFILE=ramp -e MAX_VUS=150 -e SLEEP=0 \
   grafana/k6:1.6.1@sha256:a5ad6bc089a08d77c3ec49f3db8c6fa7a148e4073efcac44c675dbaf3568d8e1 run /load/store.js
 ```
+
+**No Windows com Git Bash**, use esta versão do terminal 3:
+
+```bash
+MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W)/load:/load:ro" \
+  -e BASE_URL="http://<DNS do NLB>" -e TARGET=gateway -e LOAD_PROFILE=ramp -e MAX_VUS=150 -e SLEEP=0 \
+  grafana/k6:1.6.1@sha256:a5ad6bc089a08d77c3ec49f3db8c6fa7a148e4073efcac44c675dbaf3568d8e1 run /load/store.js
+```
+
+O Git Bash converte caminhos como `/load/store.js` para `C:/Program Files/Git/load/store.js`, causando o erro `moduleSpecifier ... couldn't be found`. `MSYS_NO_PATHCONV=1` desativa essa conversão apenas para o comando, e `pwd -W` fornece o caminho Windows da pasta local. As aspas preservam os espaços no nome da pasta. Veja a [orientação do Docker para Git Bash](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/topics/#docker-commands-failing-in-git-bash).
+
+Escreva a URL como `http://`, sem barra invertida antes de `:`. Nos exemplos Bash, o `\` ao fim de uma linha serve apenas para continuar o comando na próxima; a última linha termina em `/load/store.js`, sem `\`.
+
+**No Windows com PowerShell**, use esta versão do terminal 3:
+
+```powershell
+docker run --rm -v "${PWD}/load:/load:ro" `
+  -e BASE_URL="http://<DNS do NLB>" -e TARGET=gateway -e LOAD_PROFILE=ramp -e MAX_VUS=150 -e SLEEP=0 `
+  grafana/k6:1.6.1@sha256:a5ad6bc089a08d77c3ec49f3db8c6fa7a148e4073efcac44c675dbaf3568d8e1 run /load/store.js
+```
+
+No PowerShell, `${PWD}` fornece a pasta atual e as aspas preservam os espaços no caminho. O acento grave no fim de cada linha continua o comando e deve ser o último caractere, sem espaços depois. A última linha termina em `/load/store.js`, sem acento grave. Os comandos dos terminais 1 e 2 e a consulta do DNS também funcionam no PowerShell.
+
+Para conferir a montagem e a leitura do script antes da carga, troque `run /load/store.js` por `inspect --include-system-env-vars /load/store.js`. O `inspect` mostra a configuração do teste sem enviar requisições ao gateway; a flag inclui as variáveis de ambiente, como `LOAD_PROFILE` e `MAX_VUS`.
 
 O que deve aparecer:
 
